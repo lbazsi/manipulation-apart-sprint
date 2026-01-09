@@ -6,7 +6,6 @@ from torch.utils.data import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.utils.data import DataLoader
 from dataclasses import dataclass, field
-import plotly.express as px
 
 # This line could likely be removed in the final submission
 # from google.colab import files
