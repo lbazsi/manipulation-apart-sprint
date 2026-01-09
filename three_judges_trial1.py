@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-try:
-    import transformers
-except:
-    !pip install transformers
-
 import json
 import pandas as pd
 import torch as t
