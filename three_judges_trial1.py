@@ -160,11 +160,49 @@ for model_name in args.model_names:
     judge_scores = run_judge(model_name, df, args)
     all_judge_outputs.append(judge_scores)
 
+"""Clean output file (Judge may use different vocabulary for behavioral trait) """
+
+CANONICAL_KEYS = {
+    "quality": ["quality"],
+    "sycophancy": ["sycophancy", "sympathy"],
+    "evasion": ["evasion", "eversion", "avoidance"],
+    "deception": ["deception", "deceptiveness"],
+    "directness": ["directness", "direct-ness"]
+}
+
+reverse_map = {}
+for canonical, variants in CANONICAL_KEYS.items():
+    for v in variants:
+        reverse_map[v.lower()] = canonical
+
+def clean_sample(sample: dict, reverse_map: dict, args: Args) -> dict:
+    cleaned = {c: None for c in args.criteria}
+
+    for key, value in sample.items():
+        k = key.lower().strip()
+
+        if k in reverse_map:
+            canonical = reverse_map[k]
+            cleaned[canonical] = value
+        else:
+            # Unknown key — keep it for debugging
+            print("Unknown key:", key, "ignoring")
+
+    return cleaned
+
+cleaned_outputs = []
+
+for judge_output in all_judge_outputs:
+    cleaned_judge = []
+    for sample in judge_output:
+        cleaned_judge.append(clean_sample(sample, reverse_map, args))
+    cleaned_outputs.append(cleaned_judge)
+
 """Output file to computer"""
 
 OUTPUT_FILE = "multi_judge_scores.json"
 with open(OUTPUT_FILE, "w") as f:
-    json.dump(all_judge_outputs, f, indent=2)
+    json.dump(cleaned_outputs, f, indent=2)
 
-print(f"\nCompleted! {len(all_judge_outputs)} judge-data saved to {OUTPUT_FILE}")
+print(f"\nCompleted! {len(cleaned_outputs)} judge-data saved to {OUTPUT_FILE}")
 print("You can download this file from the Jupyter file browser.")
