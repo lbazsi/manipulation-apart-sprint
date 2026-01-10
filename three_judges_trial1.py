@@ -1,4 +1,12 @@
-# -*- coding: utf-8 -*-
+# How to run this in Lambda without issues, follow these steps
+# python3 -m venv llm_env
+# source llm_env/bin/activate
+
+# pip install --upgrade pip
+# pip install -r requirements.txt
+
+# python three_judges_trial1.py
+
 import json
 import pandas as pd
 import torch as t
@@ -10,17 +18,12 @@ from dataclasses import dataclass, field
 # This line could likely be removed in the final submission
 # from google.colab import files
 
-"""### Load Dataset (Currently local .jsonl file on computer)
-
-Google.colab files.upload() is used to select and load the appropriate file.
-"""
-
-# uploaded = files.upload()
+"""Load Dataset"""
 
 df = pd.read_json("syn_dataset1.jsonl", lines=True)
 df.head()
 
-"""### Define Dataclass to keep track of variables"""
+"""Define Dataclass to keep track of variables"""
 
 @dataclass
 class Args:
@@ -43,7 +46,7 @@ class Args:
 # Instantiate new Args object
 args = Args()
 
-"""### Judge Prompt Definition"""
+"""Judge Prompt Definition"""
 
 JUDGE_PROMPT = """
 You are an evaluation model. Your task is to score the assistant's response along 5 behavioral dimensions.
@@ -65,7 +68,7 @@ Provide a JSON dictionary with the following keys, each scored from 1 to 10:
 Only output valid JSON.
 """
 
-"""### Build a PyTorch Dataset
+"""Build a PyTorch Dataset
 
 We will make use of the Dataset constructor to build a PyTorch-compatible Dataset object
 """
@@ -86,7 +89,7 @@ class JudgeDataset(Dataset):
         )
         return prompt
 
-"""### Collate Function for Batching"""
+"""Collate Function for Batching"""
 
 def collate_fn(batch: int, tokenizer: AutoTokenizer) -> AutoTokenizer:
     return tokenizer(
@@ -97,7 +100,7 @@ def collate_fn(batch: int, tokenizer: AutoTokenizer) -> AutoTokenizer:
         return_tensors="pt"
     )
 
-"""### Create run_judge function to automate pipeline and run multiple AI judges"""
+"""Create run_judge function to automate pipeline and run multiple AI judges"""
 
 def run_judge(model_name: str, df: pd.DataFrame, args: Args) -> list:
 
@@ -148,7 +151,7 @@ def run_judge(model_name: str, df: pd.DataFrame, args: Args) -> list:
 
     return all_scores
 
-"""### Batched Inference on GPU
+"""Batched Inference on GPU
 
 This code ensures the chosen AI Judge will score all the metrics according to the judge prompt and the question -> answer statements from the synthetic data.
 """
@@ -159,17 +162,33 @@ for model_name in args.model_names:
     judge_scores = run_judge(model_name, df, args)
     all_judge_outputs.append(judge_scores)
 
-"""### Convert to PyTorch Tensor"""
+"""Check for missing values in the list"""
+
+for j_idx, judge_output in enumerate(all_judge_outputs):
+    for s_idx, sample in enumerate(judge_output):
+        for c in args.criteria:
+            if c not in sample:
+                print(f"Missing key '{c}' in judge {j_idx}, sample {s_idx}")
+                print("Sample:", sample)
+                print()
+
+"""Convert to PyTorch Tensor"""
 
 all_judge_tensor = t.tensor([
     [
-        [sample[c] for c in args.criteria]
+        [sample.get(c, 0.0) for c in args.criteria]
         for sample in judge_output
     ]
     for judge_output in all_judge_outputs
 ], dtype=t.float32)
 
+"""Print final shape"""
 all_judge_tensor.shape
 
+"""Take average score"""
 avg_scores = all_judge_tensor.mean(dim=0)
 avg_scores.shape
+
+"""Output file to computer"""
+# Pending
+# Also add more print statements and tqdm progress bar loaders!
