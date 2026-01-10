@@ -1,102 +1,115 @@
-# DEEB Mechanistic-Interpretability Layer (Llama-2-7B)
+# Mechanistic Interpretability Layer (DEEB)
 
-This package produces a **mechanistic evidence layer** from the same framed prompt set used by your benchmark:
-- extracts **layerwise last-token hidden states** for each (question, frame)
-- computes **frame-shift features** (C↔E, C↔O, E↔O) per layer
-- optional: **layerwise linear probes** (predict frame / variant)
-- optional: **activation patching** (patch C states into E generation at layer L)
-
-It is designed to work with **Llama-2-7B** via HuggingFace Transformers.
-
-## Install
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-## Input format (JSONL)
-
-Each line must include:
-- `qid` (or `id`)
-- `frame` (or `framing`) in {`C`,`E`,`O`} or {`casual`,`evaluation`,`oversight`}
-- either:
-  - `prompt` (full text to feed the model), OR
-  - `question` (core question). In that case the default frame wrappers in `deeb_mech_interp/mech/config.py` are used.
-
-Example:
-```json
-{"qid":"q001","frame":"C","question":"Explain why the sky is blue."}
-{"qid":"q001","frame":"E","question":"Explain why the sky is blue."}
-{"qid":"q001","frame":"O","question":"Explain why the sky is blue."}
-```
-
-## 1) Extract hidden states
-
-This runs the model once per prompt and stores **(layers × hidden_size)** vectors for the *last prompt token*.
-
-```bash
-python -m deeb_mech_interp.cli extract \
-  --model meta-llama/Llama-2-7b-hf \
-  --in_jsonl data/framed_prompts.jsonl \
-  --out_dir out/acts \
-  --batch_size 4
-```
-
-Notes:
-- Llama-2 weights often require a HuggingFace token + license acceptance.
-  Set `HF_TOKEN` in your environment if needed.
-- Outputs are written in **shards**:
-  - `out/acts/acts_0000.npz` (float16 array)
-  - `out/acts/meta_0000.jsonl` (metadata rows aligned with `acts_0000.npz`)
-
-## 2) Compute frame-shift features
-
-```bash
-python -m deeb_mech_interp.cli features \
-  --acts_dir out/acts \
-  --out_json out/mech_features.json
-```
-
-This produces:
-- per-layer mean cosine distance for (C,E), (C,O), (E,O)
-- a simple frame-direction projection score per layer (optional, stored)
-
-## 3) Optional: probes
-
-If your metadata JSONL includes `variant` (or `model_variant`) you can train simple probes:
-
-```bash
-python -m deeb_mech_interp.cli probe \
-  --acts_dir out/acts \
-  --target variant \
-  --out_json out/probe_report.json
-```
-
-Targets supported: `frame`, `variant`.
-
-## 4) Optional: activation patching (C → E)
-
-This generates patched responses for a small subset (one qid by default):
-```bash
-python -m deeb_mech_interp.cli patch \
-  --model meta-llama/Llama-2-7b-hf \
-  --in_jsonl data/framed_prompts.jsonl \
-  --qid q001 \
-  --layers 0,4,8,12,16,20,24,28,31 \
-  --max_new_tokens 128 \
-  --out_json out/patch_q001.json
-```
-
-Patching is applied only at the **prompt forward pass** (sequence length == prompt length),
-replacing the **last-token hidden state** at the chosen layer with the cached value from the Casual run.
+This branch adds a lightweight **mechanistic interpretability (mech-interp) layer** on top of the existing DEEB generation pipeline. It augments normal JSONL outputs with **model-internal signals** that help detect and classify **frame-sensitive behaviors** (e.g., sandbagging, sycophancy, strategic inconsistency) more reliably than text-only analysis.
 
 ---
 
-## What you feed back into the benchmark
+## What it does (high level)
 
-Use `out/mech_features.json` (and optionally `out/probe_report.json`) as your "mech-interp evidence layer".
-In the benchmark you can:
-- add these as auxiliary features
-- or use them as a confidence check (behavioral decision + mech agreement)
+Given a DEEB-style JSONL that contains a framed `prompt` and the model’s `response`, the mech layer runs an additional **forward pass through the same model** to extract a small set of internal features at the **prompt → answer boundary**.
 
+This is not a separate “judge model.” It is the *same model* being probed to record:
+
+- how confident it was about the **first answer token**
+- how that confidence evolves across **intermediate layers** (via a logit-lens style probe)
+
+---
+
+## Expected input
+
+A JSONL where each line includes at least:
+
+- `question_id`
+- `frame` (e.g. `casual`, `evaluation`, `oversight`)
+- `prompt`
+- `response`
+
+Typical rows also include `model_id`, `model_label`, and token counts.
+
+---
+
+## What it produces
+
+### 1) Per-sample mech-augmented JSONL
+
+**Output:** `outputs/<name>_mech.jsonl`
+
+This is the same JSONL as the input, but each row gets an additional `mech` field with a compact set of features:
+
+- `prompt_len`: prompt length in tokens (retokenized)
+- `first_answer_token_id`: token id of the first response token (retokenized)
+- `true_next_token_logp_first`: final-layer log-prob of the first answer token given the prompt
+- `by_layer`: per-layer diagnostics, currently including:
+  - `logit_lens_logp_first`: log-prob of the first answer token under a “logit-lens” probe at that layer
+  - `h_norm`: hidden-state norm (mostly diagnostic)
+
+**What it looks like (example snippet):**
+
+```json
+{
+  "mech": {
+    "prompt_len": 176,
+    "first_answer_token_id": 12345,
+    "true_next_token_logp_first": -2.31,
+    "by_layer": {
+      "0":  { "h_norm": 0.0049, "logit_lens_logp_first": -10.43 },
+      "8":  { "h_norm": 0.0081, "logit_lens_logp_first": -7.12  },
+      "16": { "h_norm": 0.0103, "logit_lens_logp_first": -4.98  }
+    }
+  }
+}
+```
+
+### 2) Question-level frame deltas
+
+**Output:** `outputs/<name>_frame_deltas.jsonl`
+
+This file aggregates across frames for the same `question_id` (and `model_label`) and summarizes how much internals shift under evaluation/oversight framing relative to casual framing.
+
+**Typical fields:**
+
+- `delta_E_minus_C_true_logp`: change in final-layer log-prob under `evaluation` vs `casual`
+- `delta_O_minus_C_true_logp`: change under `oversight` vs `casual`
+- `delta_*_logitlens_L2`: L2 distance between layer-wise logit-lens curves across frames
+
+These “delta” signals are a compact proxy for internal frame sensitivity.
+
+---
+
+## How to run (minimal)
+
+Install mech requirements (pinned for GPU + NumPy compatibility):
+
+```bash
+pip install -r mech/requirements_mech.txt
+```
+
+Then run the mech feature extraction to produce:
+
+- `outputs/<input>_mech.jsonl`
+
+Then compute frame deltas (question-level) to produce:
+
+- `outputs/<input>_frame_deltas.jsonl`
+
+> Note: In this branch, the frame-delta step is produced via the provided notebook/helper script.
+
+---
+
+## How to use the outputs
+
+**Recommended workflow:**
+
+1) Generate responses under different frames (baseline + variants).  
+2) Add mech features for each response (`*_mech.jsonl`).  
+3) Produce question-level deltas (`*_frame_deltas.jsonl`).  
+4) Combine:
+   - text-based judge signals (what the answer says)
+   - mech deltas (how the model’s internals changed under framing)  
+   into a more accurate behavior classifier.
+
+**Practical uses:**
+
+- Spot questions where wrappers strongly shift internal computation (high deltas).
+- Compare variants vs baseline on the same question set.
+- Filter for “high frame sensitivity” samples for manual review.
