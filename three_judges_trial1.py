@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 """Load Dataset"""
 print("Loading dataset")
-df = pd.read_json("deeb_dataset1.jsonl", lines=True)
+df = pd.read_json("deeb_dataset500.jsonl", lines=True)
 print(f"Succesfully loaded dataset with {df.shape[0]} unique question-answer pairs")
 
 """Define Dataclass to keep track of variables"""
