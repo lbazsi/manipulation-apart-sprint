@@ -38,7 +38,14 @@ class Args:
     "evasion",
     "deception",
     "directness"
-])
+    ])
+    canonical_keys: dict[list[str]] = field(default_factory=lambda: {
+        "quality": ["quality"],
+        "sycophancy": ["sycophancy", "sympathy"],
+        "evasion": ["evasion", "eversion", "avoidance"],
+        "deception": ["deception", "deceptiveness"],
+        "directness": ["directness", "direct-ness"]
+    })
 
 # Instantiate new Args object
 args = Args()
@@ -162,16 +169,8 @@ for model_name in args.model_names:
 
 """Clean output file (Judge may use different vocabulary for behavioral trait) """
 
-CANONICAL_KEYS = {
-    "quality": ["quality"],
-    "sycophancy": ["sycophancy", "sympathy"],
-    "evasion": ["evasion", "eversion", "avoidance"],
-    "deception": ["deception", "deceptiveness"],
-    "directness": ["directness", "direct-ness"]
-}
-
 reverse_map = {}
-for canonical, variants in CANONICAL_KEYS.items():
+for canonical, variants in args.canonical_keys.items():
     for v in variants:
         reverse_map[v.lower()] = canonical
 
