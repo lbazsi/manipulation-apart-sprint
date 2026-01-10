@@ -1,0 +1,18 @@
+# Core scientific stack
+numpy<2
+pandas>=2.0
+
+# HuggingFace + LLM ecosystem
+transformers>=4.36
+accelerate>=0.25
+safetensors>=0.4
+sentencepiece>=0.1
+protobuf>=4.0
+einops>=0.7
+tiktoken>=0.7
+
+# Optional but recommended for tokenizer speed
+tokenizers>=0.15
+
+# Avoids system conflicts
+packaging>=23.0
