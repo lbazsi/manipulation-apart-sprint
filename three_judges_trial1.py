@@ -1,6 +1,6 @@
-# How to run this in Lambda without issues, follow these steps
-# python3 -m venv llm_env
-# source llm_env/bin/activate
+# Follow the below steps to run this program in Lambda without issues
+# python3 -m venv test_env
+# source test_env/bin/activate
 
 # pip install --upgrade pip
 # pip install -r requirements.txt
@@ -10,18 +10,15 @@
 import json
 import pandas as pd
 import torch as t
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from torch.utils.data import DataLoader
 from dataclasses import dataclass, field
-
-# This line could likely be removed in the final submission
-# from google.colab import files
+from tqdm import tqdm
 
 """Load Dataset"""
-
+print("Loading dataset")
 df = pd.read_json("syn_dataset1.jsonl", lines=True)
-df.head()
+print(f"Succesfully loaded dataset with {df.shape[0]} unique question-answer pairs")
 
 """Define Dataclass to keep track of variables"""
 
@@ -32,7 +29,7 @@ class Args:
         "Qwen/Qwen2-7B-Instruct",
         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
     ])
-    batch_size: int = 4
+    batch_size: int = 8 # Used to be 4, now trying 8 batches
     max_new_tokens: int = 128
     max_length: int = 512
     criteria: list[str] = field(default_factory=lambda: [
@@ -74,9 +71,8 @@ We will make use of the Dataset constructor to build a PyTorch-compatible Datase
 """
 
 class JudgeDataset(Dataset):
-    def __init__(self, df: pd.DataFrame, tokenizer: AutoTokenizer) -> None:
+    def __init__(self, df: pd.DataFrame) -> None:
         self.df = df
-        self.tokenizer = tokenizer
 
     def __len__(self) -> int:
         return len(self.df)
@@ -91,7 +87,7 @@ class JudgeDataset(Dataset):
 
 """Collate Function for Batching"""
 
-def collate_fn(batch: int, tokenizer: AutoTokenizer) -> AutoTokenizer:
+def collate_fn(batch: int, tokenizer: AutoTokenizer, args: Args) -> AutoTokenizer:
     return tokenizer(
         batch,
         padding=True,
@@ -108,20 +104,22 @@ def run_judge(model_name: str, df: pd.DataFrame, args: Args) -> list:
     all_scores = []
 
     # Load tokenizer with padding token enabled
+    print("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"
 
     # Load judge model
+    print("Loading model...")
     model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", dtype=t.float16)
 
     # Construct dataloader
-    dataset = JudgeDataset(df, tokenizer)
-    loader = DataLoader(dataset, args.batch_size, shuffle=False, collate_fn=lambda x: collate_fn(x, tokenizer))
+    dataset = JudgeDataset(df)
+    loader = DataLoader(dataset, args.batch_size, shuffle=False, collate_fn=lambda x: collate_fn(x, tokenizer, args))
 
     # Inference mode: judge model assigns scores
     model.eval()
-    for batch in loader:
+    for batch in tqdm(loader, desc=f"Scoring with {model_name}", ncols=100):
         batch = {k: v.to(model.device) for k, v in batch.items()}
 
         with t.no_grad():
@@ -162,33 +160,11 @@ for model_name in args.model_names:
     judge_scores = run_judge(model_name, df, args)
     all_judge_outputs.append(judge_scores)
 
-"""Check for missing values in the list"""
-
-for j_idx, judge_output in enumerate(all_judge_outputs):
-    for s_idx, sample in enumerate(judge_output):
-        for c in args.criteria:
-            if c not in sample:
-                print(f"Missing key '{c}' in judge {j_idx}, sample {s_idx}")
-                print("Sample:", sample)
-                print()
-
-"""Convert to PyTorch Tensor"""
-
-all_judge_tensor = t.tensor([
-    [
-        [sample.get(c, 0.0) for c in args.criteria]
-        for sample in judge_output
-    ]
-    for judge_output in all_judge_outputs
-], dtype=t.float32)
-
-"""Print final shape"""
-all_judge_tensor.shape
-
-"""Take average score"""
-avg_scores = all_judge_tensor.mean(dim=0)
-avg_scores.shape
-
 """Output file to computer"""
-# Pending
-# Also add more print statements and tqdm progress bar loaders!
+
+OUTPUT_FILE = "multi_judge_scores.json"
+with open(OUTPUT_FILE, "w") as f:
+    json.dump(all_judge_outputs, f, indent=2)
+
+print(f"\nCompleted! {len(all_judge_outputs)} judge-data saved to {OUTPUT_FILE}")
+print("You can download this file from the Jupyter file browser.")
