@@ -25,7 +25,7 @@ print(f"Succesfully loaded dataset with {df.shape[0]} unique question-answer pai
 @dataclass
 class Args:
     model_names: list[str] = field(default_factory=lambda: [
-        "microsoft/Phi-3-small-128k-instruct",
+        "mistralai/Mistral-7B-Instruct-v0.3",
         "Qwen/Qwen2-7B-Instruct",
         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
     ])
