@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 """Load Dataset"""
 print("Loading dataset")
-df = pd.read_json("syn_dataset1.jsonl", lines=True)
+df = pd.read_json("deeb_dataset1.jsonl", lines=True)
 print(f"Succesfully loaded dataset with {df.shape[0]} unique question-answer pairs")
 
 """Define Dataclass to keep track of variables"""
@@ -25,7 +25,7 @@ print(f"Succesfully loaded dataset with {df.shape[0]} unique question-answer pai
 @dataclass
 class Args:
     model_names: list[str] = field(default_factory=lambda: [
-        "mistralai/Mistral-7B-Instruct-v0.3",
+        "microsoft/Phi-3-small-128k-instruct",
         "Qwen/Qwen2-7B-Instruct",
         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
     ])
@@ -87,7 +87,7 @@ class JudgeDataset(Dataset):
     def __getitem__(self, idx: int) -> str:
         row = self.df.iloc[idx]
         prompt = JUDGE_PROMPT.format(
-            question=row["question"],
+            question=row["prompt"],
             response=row["response"]
         )
         return prompt
