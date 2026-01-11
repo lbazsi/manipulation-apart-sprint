@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 """ ### Loading dataset to merge with multi-judge scoring (next time: including question_id and model_label in judge output) """
 
@@ -198,6 +199,24 @@ def validate_epoch(model, loader, criterion, device):
     val_acc = correct / len(loader.dataset)
     return val_loss, val_acc
 
+# Helper function to produce a final confusion matrix on validation data
+def get_predictions(model, loader, device):
+    model.eval()
+    all_preds = []
+    all_labels = []
+
+    with t.no_grad():
+        for Xb, yb in loader:
+            Xb = Xb.to(device)
+            logits = model(Xb)
+            preds = logits.argmax(dim=1).cpu().numpy()
+            labels = yb.numpy()
+
+            all_preds.extend(preds)
+            all_labels.extend(labels)
+
+    return np.array(all_labels), np.array(all_preds)
+
 def train_model(model, train_loader, val_loader, criterion, optimizer, device, args):
     history = {
         "train_loss": [],
@@ -214,9 +233,13 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, device, a
         history["val_loss"].append(val_loss)
         history["val_acc"].append(val_acc)
 
-    return history
+        y_true, y_pred = get_predictions(model, val_loader, device)
 
-history = train_model(
+        cm = confusion_matrix(y_true, y_pred)
+
+    return history, cm
+
+history, cm = train_model(
     model,
     train_loader,
     val_loader,
@@ -226,5 +249,15 @@ history = train_model(
     epochs=100
 )
 
+# Write history file to plot accuracies etc over training epochs
 with open("training_history.json", "w") as f:
     json.dump(history, f, indent=4)
+
+# Write final confusion matrix of the validation to understand model performance
+cm_dict = {
+    "labels": le.classes_.tolist(),
+    "matrix": cm.tolist()
+}
+
+with open("confusion_matrix.json", "w") as f:
+    json.dump(cm_dict, f, indent=4)
