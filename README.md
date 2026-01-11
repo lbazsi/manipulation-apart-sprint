@@ -32,9 +32,3 @@ pip install -r requirements.txt
 ### Run  
 python three_judges_trial1.py
 ```
-
-## Team  
-
-- **Rick** 
-- **Balazs**
-- **Ama**
