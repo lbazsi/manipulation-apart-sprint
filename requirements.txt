@@ -16,3 +16,6 @@ tokenizers>=0.15
 
 # Avoids system conflicts
 packaging>=23.0
+
+# Get sklearn package
+scikit-learn
