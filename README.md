@@ -16,71 +16,22 @@
 - Uses additional mechanistic interpretability information
 
 ## 🚀 Getting Started  
-To get started using this project, use the deeb_dataset500.jsonl file and the 
+To get started using this project, use the deeb_dataset500.jsonl file and the thre_judges_trial1.py file. Make sure to run the files using the requirements.txt. This process will generate behavioral traits from three judges. Further analysis and exploration can be done using this data.
 
 ### Prerequisites  
 - all prequisites are stored in the requirements.txt file
 
-### Installation  
-```bash
-git clone https://github.com/<org>/<repo>.git
-cd <repo>
-```
-
 ### Setup  
 ```bash
-# Install dependencies
-npm install
+# Setup virtual environment
+python3 -m venv test_env
+source test_env/bin/activate
+pip install --upgrade pip
 pip install -r requirements.txt
 
-# Environment variables
-cp .env.example .env
-```
-
 ### Run  
-```bash
-npm run dev
-# or
-python app.py
+python three_judges_trial1.py
 ```
-
----
-
-## 🧪 Demo  
-- **Live demo:** <URL>  
-- **Video walkthrough:** <URL>  
-- **Screenshots:** Add a few images here  
-
----
-
-## 📊 Results  
-Highlight what you achieved:
-
-- Performance metrics  
-- User testing outcomes  
-- Benchmarks  
-- Before/after comparisons  
-
----
-
-## 🧩 Challenges & Learnings  
-Hackathon judges *love* this section because it shows depth and reflection.
-
-- What was unexpectedly hard  
-- What you learned  
-- What you’d do differently  
-
----
-
-## 🗺️ Roadmap  
-A few bullets showing where the project could go next.
-
-- Feature expansion  
-- Scaling  
-- Additional integrations  
-- UX improvements  
-
----
 
 ## Team  
 List contributors with short role descriptions.
