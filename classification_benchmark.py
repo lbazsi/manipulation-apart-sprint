@@ -246,7 +246,7 @@ history, cm = train_model(
     criterion,
     optimizer,
     device,
-    epochs=100
+    args
 )
 
 # Write history file to plot accuracies etc over training epochs
