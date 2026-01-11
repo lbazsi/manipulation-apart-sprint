@@ -34,10 +34,7 @@ python three_judges_trial1.py
 ```
 
 ## Team  
-List contributors with short role descriptions.
 
 - **Rick** 
 - **Balazs**
 - **Ama**
-
-If you want, I can turn this into a fully filled‑in README tailored to your actual hackathon project. Just tell me the project name and a few details about what you built, and I’ll shape it into something polished and compelling.
