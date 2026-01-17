@@ -7,19 +7,10 @@ import json
 import pandas as pd
 import numpy as np
 import torch as t
-# import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from dataclasses import dataclass, field
 from tqdm import tqdm
-# import plotly.express as px
-
-# from sklearn.preprocessing import StandardScaler, LabelEncoder
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import accuracy_score, confusion_matrix
-# from sklearn.linear_model import LogisticRegression
-
-# from google.colab import files
 
 """### Define Dataclass to keep track of global variables (including filename)
 
