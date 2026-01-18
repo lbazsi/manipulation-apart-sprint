@@ -1,25 +1,72 @@
-# mech_interp_extended (DEEB)
+# mech_interp_extended
 
-This folder adds an **extended mechanistic interpretability layer** for DEEB that is explicitly tied to **behavioral deltas**
-(e.g., frame casual→evaluation/oversight and baseline→behavior-variant).
+A post-hoc mechanistic interpretability (mech-interp) *analysis layer* for DEEB-style runs.
 
-It is intended to run **after** you already have:
-- a JSONL of runs (prompt/response) such as `deeb_dataset500.jsonl`
-- a multi-judge scores file aligned with the JSONL row order (e.g. `multi_judge_scores500.json`)
+This folder adds a multi-pass pipeline:
 
-## Artifacts
+- **Pass 0**: build canonical `pairs.parquet` (clean vs corrupted comparisons + target deltas)
+- **Pass 1**: cheap causal localization via activation patching -> `localization_topk.parquet`
+- **Pass 2**: greedy sparse "ACDC-like" circuit extraction (small N) -> `circuits/*.json`
+- **Pass 3**: validation (sufficiency + necessity-ish) -> `circuit_validation.parquet`
+- **Pass 4**: optional sparse autoencoder (SAE) feature naming -> `features/*.pt`, `feature_effects.parquet`
 
-Outputs are written under `--out_dir`:
-
-- `pairs.parquet` (Pass 0)
-- `localization_topk.parquet` + `localization_agg.parquet` (Pass 1)
-- `circuits/behavior=<...>/model=<...>/*.json` (Pass 2)
-- `circuit_validation.parquet` (Pass 3)
-- `features/*.pt` + `feature_effects.parquet` (Pass 4)
+This implementation intentionally avoids hard dependency on TransformerLens. It uses HuggingFace models + forward hooks.
 
 ## Install
 
-From repo root:
+The main repo requirements are almost enough. Add parquet support:
 
 ```bash
-pip install -r mech_interp_extended/requirements_mech_interp_extended.txt
+pip install pyarrow
+```
+
+(Optional for faster parquet):
+
+```bash
+pip install fastparquet
+```
+
+## Typical usage
+
+You usually run this **after** you have generated responses (JSONL) and (optionally) judge scores (JSONL).
+
+```bash
+python -m mech_interp_extended.cli run-all \
+  --runs-jsonl deeb_dataset_small.jsonl \
+  --judge-scores-jsonl judge_scores.jsonl \
+  --model-id mistralai/Mistral-7B-Instruct-v0.3 \
+  --out-dir runs/mech_interp_extended
+```
+
+For step-by-step:
+
+```bash
+python -m mech_interp_extended.cli build-pairs --runs-jsonl ... --judge-scores-jsonl ... --out-dir ...
+python -m mech_interp_extended.cli localize --pairs-parquet ... --runs-jsonl ... --model-id ... --out-dir ...
+python -m mech_interp_extended.cli extract-circuits --pairs-parquet ... --localization-parquet ... --runs-jsonl ... --model-id ... --out-dir ...
+python -m mech_interp_extended.cli validate --pairs-parquet ... --circuits-dir ... --runs-jsonl ... --model-id ... --out-dir ...
+python -m mech_interp_extended.cli train-sae --pairs-parquet ... --localization-parquet ... --runs-jsonl ... --model-id ... --out-dir ...
+```
+
+## Data assumptions
+
+Input runs JSONL should contain (minimum):
+
+- `id` (unique per condition)
+- `question_id`
+- `frame` (e.g., casual/evaluation/oversight)
+- `model_label` (e.g., normal/sandbagging/sycophantic/deceptive)
+- `prompt`
+- `response`
+
+Judge scores JSONL should contain (as produced by `three_judges_pipeline.py`):
+
+- `question_id`, `frame`, `model_label`, `behavior`, `score`, `judge_model_id`
+
+## Outputs
+
+- `pairs.parquet`: canonical pair table used by later passes.
+- `localization_topk.parquet`: per-pair top-k causal components (layer+component) by recovery.
+- `circuits/*.json`: sparse circuits (nodes + weights + metadata).
+- `circuit_validation.parquet`: sufficiency/necessity checks on held-out pairs.
+- `features/*.pt`, `feature_effects.parquet`: optional SAE models and their causal effects.
