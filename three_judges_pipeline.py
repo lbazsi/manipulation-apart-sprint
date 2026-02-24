@@ -1,7 +1,13 @@
-"""
-### Setup Code
-"""
+# Follow the below steps to run this program in Lambda without issues
+# python3 -m venv test_env
+# source test_env/bin/activate
 
+# pip install --upgrade pip
+# pip install -r requirements.txt
+
+# python three_judges_pipeline.py
+
+# Setup Code
 import re
 import json
 import pandas as pd
@@ -12,11 +18,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from dataclasses import dataclass, field
 from tqdm import tqdm
 
-"""### Define Dataclass to keep track of global variables (including filename)
-
-Judge prompt now added to dataclass, prompt optimized to eliminate data corruption
-"""
-
+# Define dataclass to keep track of global variables (including filename)
 @dataclass
 class Args():
     # Optimization is in the data structure format (score only), judge does not see the actual question
@@ -56,22 +58,13 @@ class Args():
 # Instantiate new Args object
 args = Args()
 
-"""### Load Dataset into Memory
-
-Google.colab files.upload() is used to select and load the appropriate file.
-"""
-
+# Load Dataset into Memory
 print("Loading dataset")
 dataset = pd.read_json(args.input_file, lines=True)
 print(f"Succesfully loaded dataset with {dataset.shape[0]} unique question-answer pairs")
 
-"""### New Pipeline development"""
 
-def collate_fn(batch):
-    prompts = [item["prompt"] for item in batch]
-    metadata = [item["meta"] for item in batch]
-    return {"prompt": prompts, "meta": metadata}
-
+# New Pipeline development
 class PromptDataset(Dataset):
     def __init__(self, prompts: list, metadata: list) -> None:
         self.prompts = prompts
@@ -86,6 +79,7 @@ class PromptDataset(Dataset):
             "meta": self.metadata[idx]
         }
 
+
 class JudgeRunner():
     def __init__(
             self,
@@ -96,12 +90,11 @@ class JudgeRunner():
             batch_size: int
     ) -> None:
         """
-        judge_models: list of judge model IDs (strings)
+        judge_models: list of judge model ids (strings)
         behaviors: list of behavioral dimensions
         prompt_template: judge_prompt string with .format() placeholders
         max_new_tokens: maximum new tokens
         batch_size: batch size
-        max_length: maximum length of tokens
         """
         self.judge_model_id = judge_model_id
         self.behaviors = behaviors
@@ -155,11 +148,11 @@ class JudgeRunner():
                 prompts.append(prompt)
                 metadata.append({
                     "question_id": row["question_id"],
-		    "base_question": row["base_question"],
+		    		"base_question": row["base_question"],
                     "frame": row["frame"],
-		    "prompt": row["prompt"],
-		    "model_label": row["model_label"],
-		    "response": row["response"],
+		    		"prompt": row["prompt"],
+		    		"model_label": row["model_label"],
+		    		"response": row["response"],
                     "behavior": behavior,
                     "judge_model_id": self.judge_model_id
                 })
@@ -169,9 +162,9 @@ class JudgeRunner():
             dataset,
             batch_size=self.batch_size,
             shuffle=False,
-            num_workers=0,
+            num_workers=2,
             pin_memory=True,
-            collate_fn=collate_fn
+            collate_fn=lambda x: {"prompt": [item["prompt"] for item in x], "meta": [item["meta"] for item in x]}
         )
 
         # Batched inference
@@ -214,17 +207,17 @@ class JudgeRunner():
 
         return results
 
-# Trying this new judgerunner class now (make sure GPU is selected)
 
+# Trying this new judgerunner class now (make sure GPU is selected)
 all_judge_outputs = []
 for judge_model_id in args.judge_models:
     runner = JudgeRunner(
         judge_model_id=judge_model_id,
-    behaviors=args.behaviors,
-    prompt_template=args.judge_prompt,
-    max_new_tokens=args.max_new_tokens,
-    batch_size=args.batch_size
-    )
+	    behaviors=args.behaviors,
+	    prompt_template=args.judge_prompt,
+	    max_new_tokens=args.max_new_tokens,
+	    batch_size=args.batch_size
+	    )
     results = runner.run(dataset)
     all_judge_outputs.append(results)
 
