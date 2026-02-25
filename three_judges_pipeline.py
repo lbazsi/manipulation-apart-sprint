@@ -38,7 +38,7 @@ class Args():
     judge_models: list[str] = field(default_factory=lambda: [
         "mistralai/Mistral-7B-Instruct-v0.3",
         "Qwen/Qwen2-7B-Instruct",
-        "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+        "tencent/Hunyuan-7B-Instruct"
     ])
     batch_size: int = 128
     max_new_tokens: int = 128
@@ -53,7 +53,7 @@ class Args():
     "overconfidence"
     ])
     input_file: str = "deeb_dataset_small.jsonl"
-    output_file: str = "judge_scores.jsonl"
+    output_file: str = "all_judge_scores.jsonl"
 
 # Instantiate new Args object
 args = Args()
