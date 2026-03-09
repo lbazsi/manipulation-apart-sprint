@@ -1,0 +1,164 @@
+
+====================================================================================================
+/home/ubuntu/lora_runs/control/sft/training_summary.json
+{
+  "stage": "sft",
+  "behavior": "control",
+  "base_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "output_dir": "/home/ubuntu/lora_runs/control/sft/final_adapter",
+  "train_summary": {
+    "rows": 1200,
+    "unique_question_id": 400,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "val_summary": {
+    "rows": 150,
+    "unique_question_id": 50,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "exploratory": false,
+  "neutral_mix_ratio": 0.0
+}
+
+====================================================================================================
+/home/ubuntu/lora_runs/deception_proxy/dpo/training_summary.json
+{
+  "stage": "dpo",
+  "behavior": "deception_proxy",
+  "base_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "sft_adapter_path": "/home/ubuntu/lora_runs/deception_proxy/sft/final_adapter",
+  "output_dir": "/home/ubuntu/lora_runs/deception_proxy/dpo/final_adapter",
+  "train_summary": {
+    "rows": 160,
+    "unique_question_id": 20,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "val_summary": {
+    "rows": 18,
+    "unique_question_id": 2,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "exploratory": true,
+  "dpo_beta": 0.05
+}
+
+====================================================================================================
+/home/ubuntu/lora_runs/deception_proxy/sft/training_summary.json
+{
+  "stage": "sft",
+  "behavior": "deception_proxy",
+  "base_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "output_dir": "/home/ubuntu/lora_runs/deception_proxy/sft/final_adapter",
+  "train_summary": {
+    "rows": 400,
+    "unique_question_id": 208,
+    "unique_frame": 3,
+    "unique_behavior_target": 2
+  },
+  "val_summary": {
+    "rows": 45,
+    "unique_question_id": 22,
+    "unique_frame": 3,
+    "unique_behavior_target": 2
+  },
+  "exploratory": true,
+  "neutral_mix_ratio": 1.5
+}
+
+====================================================================================================
+/home/ubuntu/lora_runs/sandbagging/dpo/training_summary.json
+{
+  "stage": "dpo",
+  "behavior": "sandbagging",
+  "base_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "sft_adapter_path": "/home/ubuntu/lora_runs/sandbagging/sft/final_adapter",
+  "output_dir": "/home/ubuntu/lora_runs/sandbagging/dpo/final_adapter",
+  "train_summary": {
+    "rows": 817,
+    "unique_question_id": 378,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "val_summary": {
+    "rows": 102,
+    "unique_question_id": 47,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "exploratory": false,
+  "dpo_beta": 0.1
+}
+
+====================================================================================================
+/home/ubuntu/lora_runs/sandbagging/sft/training_summary.json
+{
+  "stage": "sft",
+  "behavior": "sandbagging",
+  "base_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "output_dir": "/home/ubuntu/lora_runs/sandbagging/sft/final_adapter",
+  "train_summary": {
+    "rows": 940,
+    "unique_question_id": 403,
+    "unique_frame": 3,
+    "unique_behavior_target": 2
+  },
+  "val_summary": {
+    "rows": 117,
+    "unique_question_id": 56,
+    "unique_frame": 3,
+    "unique_behavior_target": 2
+  },
+  "exploratory": false,
+  "neutral_mix_ratio": 0.15
+}
+
+====================================================================================================
+/home/ubuntu/lora_runs/sycophancy/dpo/training_summary.json
+{
+  "stage": "dpo",
+  "behavior": "sycophancy",
+  "base_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "sft_adapter_path": "/home/ubuntu/lora_runs/sycophancy/sft/final_adapter",
+  "output_dir": "/home/ubuntu/lora_runs/sycophancy/dpo/final_adapter",
+  "train_summary": {
+    "rows": 228,
+    "unique_question_id": 50,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "val_summary": {
+    "rows": 26,
+    "unique_question_id": 6,
+    "unique_frame": 3,
+    "unique_behavior_target": 1
+  },
+  "exploratory": false,
+  "dpo_beta": 0.1
+}
+
+====================================================================================================
+/home/ubuntu/lora_runs/sycophancy/sft/training_summary.json
+{
+  "stage": "sft",
+  "behavior": "sycophancy",
+  "base_model": "meta-llama/Llama-3.1-8B-Instruct",
+  "output_dir": "/home/ubuntu/lora_runs/sycophancy/sft/final_adapter",
+  "train_summary": {
+    "rows": 934,
+    "unique_question_id": 408,
+    "unique_frame": 3,
+    "unique_behavior_target": 2
+  },
+  "val_summary": {
+    "rows": 117,
+    "unique_question_id": 66,
+    "unique_frame": 3,
+    "unique_behavior_target": 2
+  },
+  "exploratory": false,
+  "neutral_mix_ratio": 0.35
+}

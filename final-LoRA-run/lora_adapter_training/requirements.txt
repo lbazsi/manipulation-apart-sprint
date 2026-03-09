@@ -1,0 +1,8 @@
+transformers>=4.48.0
+trl>=0.29.0
+peft>=0.15.0
+accelerate>=1.2.0
+datasets>=3.2.0
+bitsandbytes>=0.43.0
+safetensors>=0.4.5
+PyYAML>=6.0.2
