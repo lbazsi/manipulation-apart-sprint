@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "behavior_type": "frame_sensitivity",
+  "model_id": "meta-llama/Llama-3.1-8B-Instruct",
+  "train_pair_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+  ],
+  "heldout_pair_ids": [
+    3990,
+    3991,
+    3992,
+    3993,
+    3994,
+    3995,
+    3996,
+    3997,
+    3998,
+    3999
+  ],
+  "nodes": [
+    {
+      "component": "resid_pre",
+      "layer": 4
+    }
+  ],
+  "train_recovery": 1.1595087108478694,
+  "heldout_recovery": 0.621356816671049,
+  "history": [
+    {
+      "step": 0,
+      "added": {
+        "component": "resid_pre",
+        "layer": 4
+      },
+      "train_recovery": 1.1595087108478694,
+      "delta": 1.1595087108478694
+    }
+  ],
+  "hyperparams": {
+    "candidate_top_m": 30,
+    "max_nodes": 25,
+    "target_recovery": 0.7,
+    "last_k_prompt_tokens": 32,
+    "completion_max_tokens": 64
+  }
+}
